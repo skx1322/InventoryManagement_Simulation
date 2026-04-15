@@ -30,8 +30,8 @@ Whether you're a small or medium scaled business, you'll eventually run into iss
 3. __Stock Adjustment__: A simple interface to manually __"Add" or "Remove"__ stock from a specific item.
 
 ## 4. Data Classes
-![Database Classes](./doc/databaseClassv1.png)
-> Version 1
+![Database Classes](./doc/databaseClassv1.1.png)
+> Version 1.1
 
 ## 5. Implementation Plan
 1. __Phase 1 (Frontend)__: Create the frontend with SvelteKit, prototype with sample data for example, the user/product/inventory interface and template prepared to fetch data from API.
