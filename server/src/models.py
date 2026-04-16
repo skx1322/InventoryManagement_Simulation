@@ -6,9 +6,10 @@ db = SQLAlchemy()
 class User(db.Model):
     user_id = db.Column(db.String(64), primary_key=True)
     username = db.Column(db.String(256), nullable=False, unique=True)
+    organization_name = db.Column(db.String(256), nullable=False, unique=True)
     email = db.Column(db.String(256), nullable=False, unique=True)
     user_avatar= db.Column(db.String(128))
-    password = db.Column(db.String(64), primary_key=True)
+    password = db.Column(db.String, primary_key=True)
     last_login = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
 

@@ -1,16 +1,16 @@
 import os
 import uuid
 from datetime import datetime, timezone
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, make_response
 from flask_cors import CORS
 from models import db, User, Product, Category
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-from session import generate_token
+from session import generate_token, token_required
 import os
 
 app = Flask(__name__)
-CORS(app)
+CORS(app, supports_credentials=True, origins=["http://localhost:5173"])
 
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///inventory.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -35,6 +35,7 @@ def register_admin():
         }), 403
     
     username = request.form.get('username')
+    organization_name = request.form.get('organization_name')
     email = request.form.get('email')
     password = request.form.get('password')
     file = request.files.get('user_avatar')
@@ -43,17 +44,19 @@ def register_admin():
         return jsonify({
             "success": False,
             "message": "Invalid-Data: Missing required fields"
-        }), 429
+        }), 422
 
     avatar_path = None
+    
     if file:
         filenamne = secure_filename(file.filename)
         avatar_path = os.path.join('static/uploads', f"admin_{uuid.uuid4().hex}_{filenamne}")
         file.save(avatar_path)
-    
+
     new_admin = User(
         user_id=str(uuid.uuid4()),
         username=username,
+        organization_name=organization_name,
         email=email,
         password=generate_password_hash(password),
         user_avatar=avatar_path
@@ -69,7 +72,7 @@ def register_admin():
 
 @app.route("/auth/login", methods=['POST'])
 def login():
-    data = request.get_json()
+    data = request.form
     identifier = data.get('username')
     password = data.get('password')
 
@@ -86,14 +89,48 @@ def login():
         db.session.commit()
 
         token = generate_token(user.user_id)
+        response = make_response(jsonify({
+            "message": "Login successful",
+            "user": {"username": user.username}
+        }))
 
-        return jsonify({
-            "success": True,
-            "message": "Login: Admin login successfully",
-            "token": token
-        }), 200
+        response.set_cookie(
+            'access_token',
+            token,
+            httponly=True,
+            samesite="Lax",
+            secure=False,
+            max_age=60*60*24
+        )
+
+        return response
     
     return jsonify({
         "success": False,
         "message": "Missing: Invalid credentials"
     }), 401
+
+@app.route('/auth/logout', methods=['POST'])
+@token_required
+def logout(current_user):
+    response = make_response(jsonify({"message": f"Goodbye {current_user.username}"}))
+    response.set_cookie('access_token', '', expires=0)
+    return response
+
+@app.route('/user', methods=['GET'])
+@token_required
+def get_profile(current_user):
+    user_brief = {
+        "user_id": current_user.user_id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "userAvatar": current_user.user_avatar,
+        "last_login": current_user.last_login.isoformat() if current_user.last_login else None,
+        "created_at": current_user.created_at.isoformat()
+    }
+
+    return jsonify({
+        "success": True,
+        "message": "Retrieved: User Profile",
+        "data": user_brief
+    }), 200
