@@ -3,7 +3,7 @@ export interface User {
     username: string;
     organization_name: string;
     email: string;
-    userAvatar: string;
+    user_avatar: string;
     password: string;
     last_login: Date;
     created_at: Date;
@@ -30,6 +30,7 @@ export interface Product {
     product_name: string;
     product_image: string;
     product_sku: string;
+    product_brand: string;
     category_id: string;
     price: number;
     quantity: number;
@@ -37,7 +38,6 @@ export interface Product {
 };
 
 export type ProductFull = Omit<Product, "category_id"> & Category;
-
 export type Products = Product[];
 
 

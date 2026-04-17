@@ -10,7 +10,7 @@
 
       <form method="POST" action="?/login" use:enhance class="mt-10 space-y-6">
         <div>
-          <label for="username" class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Email Address</label>
+          <label for="username" class="block text-base font-bold text-gray-400 uppercase tracking-widest">Username / Email</label>
           <input 
             type="text" 
             id="username" 
@@ -22,8 +22,8 @@
 
         <div>
           <div class="flex justify-between items-center">
-            <label for="password" class="block text-[10px] font-bold text-gray-400 uppercase tracking-widest">Password</label>
-            <a href="/forgot-password" class="text-[10px] font-bold text-[#4A607C] uppercase tracking-widest hover:underline">Forgot Password?</a>
+            <label for="password" class="block text-base font-bold text-gray-400 uppercase tracking-widest">Password</label>
+            <a href="/forgot-password" class="text-base font-bold text-[#4A607C] uppercase tracking-widest hover:underline">Forgot Password?</a>
           </div>
           <input 
             type="password" 
@@ -33,11 +33,11 @@
             class="w-full mt-1 p-3 bg-[#E5E9ED] border-none rounded focus:ring-2 focus:ring-blue-500 outline-none transition-all" 
           />
         </div>
-
-        <label class="flex items-center gap-3 cursor-pointer group">
+        
+        <!-- <label class="flex items-center gap-3 cursor-pointer group">
           <input type="checkbox" name="remember" class="w-4 h-4 border-gray-300 rounded text-[#4A607C] focus:ring-[#4A607C]" />
           <span class="text-base text-gray-500 group-hover:text-gray-700 transition-colors">Keep me authenticated for 30 days</span>
-        </label>
+        </label> -->
 
         <button 
           type="submit" 
@@ -55,7 +55,7 @@
     </div>
   </div>
 
-  <div class="mt-8 flex items-center gap-8 text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+  <div class="mt-8 flex items-center gap-8 text-base font-bold text-gray-400 uppercase tracking-widest">
     <div class="flex items-center gap-2">
         <span class="w-8 bg-gray-200"></span>
         V 4.0.2
