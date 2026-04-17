@@ -8,6 +8,7 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from session import generate_token, token_required
 import os
+from utils import generate_sku
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=["http://localhost:5173"])
@@ -20,6 +21,7 @@ db.init_app(app)
 with app.app_context():
     db.create_all()
 
+# API Utility
 @app.route('/', methods=['GET'])
 def server_status():
     return jsonify({
@@ -32,6 +34,7 @@ def return_image(current_user, file_id):
     image_path = f'../static/uploads/{file_id}'
     return send_file(image_path, mimetype="image/png")
 
+# API Account
 @app.route("/auth/register", methods=['POST'])
 def register_admin():
     if User.query.first():
@@ -58,6 +61,7 @@ def register_admin():
         filenamne = secure_filename(file.filename)
         avatar_path = os.path.join('static/uploads', f"admin_{uuid.uuid4().hex}_{filenamne}")
         file.save(avatar_path)
+        image_path = image_path.replace("\\", "/")
 
     new_admin = User(
         user_id=str(uuid.uuid4()),
@@ -174,7 +178,7 @@ def get_profile(current_user):
                 "message": "Updated: Profile information saved",
                 "data": {
                     "username": current_user.username,
-                    "userAvatar": current_user.user_avatar
+                    "user_avatar": current_user.user_avatar
                 }
             }), 200
         except Exception as e:
@@ -184,7 +188,7 @@ def get_profile(current_user):
                 "message": f"Database Error: {str(e)}"
             }), 500
             
-# CRUD for Category
+# API CRUD for Category
 @app.route("/category", methods=['POST'])
 @token_required
 def create_cateogry(current_user):
@@ -229,7 +233,7 @@ def read_categories(current_user):
 
     return jsonify({
         "success": True,
-        "message": "Created: New category created successfully",
+        "message": "Retrieved: Categories read successfully",
         "data": category_list
     }), 200
 
@@ -251,14 +255,14 @@ def read_category(current_user, category_name):
 
     return jsonify({
         "success": True,
-        "message": "Created: New category created successfully",
+        "message": "Retrieve: Category read successfully",
         "data": category_list
     }), 200
 
 
 @app.route("/category/<category_cred>", methods=['PUT'])
 @token_required
-def updaet_category(current_user, category_cred):
+def update_category(current_user, category_cred):
     current_category = Category.query.filter((Category.category_id == category_cred) | (Category.category_name == category_cred)).first()
     new_name = request.form.get('new_name')
 
@@ -283,7 +287,7 @@ def updaet_category(current_user, category_cred):
 @token_required
 def delete_category(current_user):
     category_cred = request.form.get('category_cred')
-    current_category = Category.query.filter((Category.category_id == category_cred) | (Category.category_name == category_cred)).first()
+    current_category = Category.query.filter((Category.category_name == category_cred) | (Category.category_id == category_cred)).first()
 
     if not current_category:
         return jsonify({
@@ -308,26 +312,209 @@ def delete_category(current_user):
         }
     }), 200
 
-# CRUD for Products
+# API CRUD for Products
 @app.route("/products", methods=['POST'])
 @token_required
 def create_product(current_user):
     product_name = request.form.get('product_name')
     product_image = request.files.get('product_image')
+    product_brand = request.form.get('product_brand')
+    category_name = request.form.get('category_name')
+    price = request.form.get('price', 0)
+    quantity = request.form.get('quantity')
 
-    return
+    if not all([product_name, product_image, product_brand, category_name, price, quantity]):
+        return jsonify ({
+            "success": False,
+            "message": f"Missing: Missing required data.",
+        }), 422
+
+    category = Category.query.filter(Category.category_name == category_name).first()
+    if not category:
+        return jsonify({
+            "success": False,
+            "message": f"Not Found: Category {category_name} does not exist",
+        }), 404
+    
+    sku = generate_sku(product_brand, category_name, product_name)
+    image_path = None
+
+    if product_image: 
+        filename = secure_filename(product_image.filename)
+        image_path = os.path.join('static/uploads', f"prod_{uuid.uuid4().hex}_{filename}")
+        product_image.save(image_path)
+        image_path = image_path.replace("\\", "/")
+
+
+    new_product = Product(
+            product_id=str(uuid.uuid4()),
+            product_name=product_name,
+            product_image=image_path,
+            product_sku=sku,
+            product_brand=product_brand,
+            category_id=category.category_id,
+            price=float(price),
+            quantity=int(quantity)
+        )
+    
+    db.session.add(new_product)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "Created: Product added successfully",
+        "data": {"sku": sku, "product_id": new_product.product_id}
+    }), 201
 
 @app.route("/products", methods=['GET'])
 @token_required
-def read_product(current_user):
-    return
+def read_products(current_user):
+    products = Product.query.all()
+    product_list = [
+        {
+            "product_id": product.product_id,
+            "product_name": product.product_name,
+            "product_image": product.product_image,
+            "product_sku": product.product_sku,
+            "product_brand": product.product_brand,
+            "category_id": product.category_id,
+            "price": product.price,
+            "quantity": product.quantity,
+            "updated_at": product.updated_at,
+        }
+        for product in products
+    ]
 
-@app.route("/products", methods=['PUT'])
+    return jsonify({
+        "success": True,
+        "message": "Retrieve: Products read successfully",
+        "data": product_list
+    }), 200 
+
+@app.route("/products/<product_id>", methods=['GET'])
 @token_required
-def updaet_product(current_user):
-    return
+def product_detail(current_user, product_id):
+    product = Product.query.filter(Product.product_id == product_id).first()
+    if not product:
+        return jsonify({
+            "success": False,
+            "message": f"Not Found: Category {product_id} does not exist",
+        }), 404
+
+    product_list = {
+        "product_id": product.product_id,
+        "product_name": product.product_name,
+        "product_image": product.product_image,
+        "product_sku": product.product_sku,
+        "product_brand": product.product_brand,
+        "category_id": product.category_id,
+        "price": product.price,
+        "quantity": product.quantity,
+        "updated_at": product.updated_at,
+    }
+
+    return jsonify({
+        "success": True,
+        "message": "Retrieve: Category read successfully",
+        "data": product_list
+    }), 200
+
+@app.route("/products/<product_id>", methods=['PUT'])
+@token_required
+def update_product(current_user, product_id):
+    product_name = request.form.get('product_name')
+    product_image = request.files.get('product_image')
+    product_brand = request.form.get('product_brand')
+    category_name = request.form.get('category_name')
+    price = request.form.get('price', 0)
+    quantity = request.form.get('quantity')
+
+    current_product = Product.query.filter(Product.product_id == product_id).first()
+
+    if product_name:
+        current_product.product_name = product_name
+    if product_brand:
+        current_product.product_brand = product_brand
+    if category_name:
+        category = Category.query.filter(Category.category_name == category_name).first()
+        current_product.category_id = category.category_id
+    if price:
+        current_product.price = price
+    if quantity:
+        current_product.quantity = quantity
+    if product_image and product_image.filename != '':
+        if current_product.product_image and os.path.exists(current_product.product_image):
+            try:
+                os.remove(current_product.product_image)
+            except Exception as e:
+                print(f"Warning: Could not delete old avatar: {e}")
+
+        filename = secure_filename(product_image.filename)
+        unique_name = f"admin_{uuid.uuid4().hex}_{filename}"
+        save_path = os.path.join('static/uploads', unique_name)
+        product_image.save(save_path)
+
+        current_product.product_image = save_path.replace("\\", "/")
+
+    db.session.commit()
+    return jsonify({
+        "success": True,
+        "message": "Updated: Product information saved",
+        "data": {
+            "product_name": current_product.product_name,
+            "product_image": current_product.product_image
+        }
+    }), 200
 
 @app.route("/products", methods=['DELETE'])
 @token_required
 def delete_product(current_user):
-    return
+    product_id = request.form.get('product_id')
+    current_product = Product.query.filter(Product.product_id == product_id).first()
+
+    if not current_product:
+        return jsonify({
+            "success": False,
+            "message": f"Not Found: Product {product_id} does not exist",
+        }), 404
+    
+    db.session.delete(current_product)
+    db.session.commit()
+
+    return jsonify({
+        "success": True,
+        "message": "Deleted: Product information deleted",
+        "data": {
+            "product_name": current_product.product_name,
+        }
+    }), 200
+
+@app.route("/search", methods=['GET'])
+@token_required
+def search_products(current_user):
+    search = request.args.get('q')
+    products = Product.query.filter(
+        (Product.product_name.contains(search)) | 
+        (Product.product_sku.contains(search))
+    ).all()
+
+    product_list = [
+        {
+            "product_id": product.product_id,
+            "product_name": product.product_name,
+            "product_image": product.product_image,
+            "product_sku": product.product_sku,
+            "product_brand": product.product_brand,
+            "category_id": product.category_id,
+            "price": product.price,
+            "quantity": product.quantity,
+            "updated_at": product.updated_at,
+        }
+        for product in products
+    ]
+
+    return jsonify({
+        "success": True,
+        "message": "Retrieve: Product information retrieved",
+        "data": product_list
+    }), 200
