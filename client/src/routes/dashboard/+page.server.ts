@@ -24,8 +24,6 @@ export const load: PageServerLoad = async ({ fetch }) => {
 
     const totalItems = product_result.data?.length ?? 0;
     const totalValue = product_result.data?.reduce((acc, item)=>{
-        console.log(item)
-        console.log(acc)
         return acc + (Number(item.quantity) * Number(item.price))
     }, 0) ?? 0;
 
