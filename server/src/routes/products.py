@@ -94,7 +94,7 @@ def product_detail(current_user, product_id):
     if not product:
         return jsonify({
             "success": False,
-            "message": f"Not Found: Category {product_id} does not exist",
+            "message": f"Not Found: Product {product_id} does not exist",
         }), 404
 
     product_list = {

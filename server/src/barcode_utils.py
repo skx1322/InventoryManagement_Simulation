@@ -21,5 +21,5 @@ def generate_barcode(prod_sku):
         print(f"Barcode Error: {e}")
         return None
 
-path = generate_barcode('HI3-PL-FUH-AE3E')
-print(f"Saved to: {path}")
+# path = generate_barcode('HI3-PL-FUH-AE3E')
+# print(f"Saved to: {path}")

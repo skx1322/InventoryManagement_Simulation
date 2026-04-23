@@ -28,3 +28,8 @@ class Product(db.Model):
     price = db.Column(db.Numeric(10, 2), nullable=False)
     quantity = db.Column(db.Integer, nullable=False)
     updated_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
+
+class Barcode(db.Model):
+    barcode_id = db.Column(db.String(64), primary_key=True)
+    product_sku = db.Column(db.String(128), db.ForeignKey('product.product_sku'), nullable=False, unique=True)
+    barcode_image = db.Column(db.String(128))

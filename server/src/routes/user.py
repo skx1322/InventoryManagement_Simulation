@@ -20,10 +20,6 @@ def return_image(current_user, file_id):
     image_path = f'../static/uploads/{file_id}'
     return send_file(image_path, mimetype="image/png")
 
-    response = make_response(jsonify({"message": f"Goodbye {current_user.username}"}))
-    response.set_cookie('access_token', '', expires=0)
-    return response
-
 @user_bp.route('/user', methods=['GET', 'PUT'])
 @token_required
 def get_profile(current_user):

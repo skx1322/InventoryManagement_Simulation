@@ -5,6 +5,7 @@ from routes.products import product_bp
 from routes.categories import category_bp
 from routes.auth import auth_bp
 from routes.user import user_bp
+from routes.barc import barcode_bp
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True, origins=["http://localhost:5173"])
@@ -31,3 +32,5 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(category_bp)
 
 app.register_blueprint(product_bp)
+
+app.register_blueprint(barcode_bp)
